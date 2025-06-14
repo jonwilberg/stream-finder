@@ -1,0 +1,116 @@
+{
+    "paths": [
+        [
+            "genres",
+            34399,
+            "su",
+            {
+                "from": 0,
+                "to": 1
+            },
+            "reference",
+            [
+                "availability",
+                "episodeCount",
+                "queue",
+                "summary"
+            ]
+        ]
+    ],
+    "jsonGraph": {
+        "genres": {
+            "34399": {
+                "su": {
+                    "0": {
+                        "reference": {
+                            "$type": "ref",
+                            "value": [
+                                "videos",
+                                "80121192"
+                            ]
+                        }
+                    },
+                    "1": {
+                        "reference": {
+                            "$type": "ref",
+                            "value": [
+                                "videos",
+                                "81743369"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "videos": {
+            "80121192": {
+                "availability": {
+                    "$type": "atom",
+                    "value": {
+                        "isPlayable": true,
+                        "availabilityDate": "7 June",
+                        "availabilityStartTime": 1749333600000,
+                        "unplayableCause": null
+                    }
+                },
+                "episodeCount": {
+                    "$type": "atom",
+                    "value": null
+                },
+                "queue": {
+                    "$type": "atom",
+                    "value": {
+                        "available": true,
+                        "inQueue": false
+                    }
+                },
+                "summary": {
+                    "$type": "atom",
+                    "value": {
+                        "type": "movie",
+                        "unifiedEntityId": "Video:80121192",
+                        "id": 80121192,
+                        "isOriginal": false,
+                        "liveEvent": {
+                            "hasLiveEvent": false
+                        }
+                    }
+                }
+            },
+            "81743369": {
+                "availability": {
+                    "$type": "atom",
+                    "value": {
+                        "isPlayable": true,
+                        "availabilityDate": "10 June",
+                        "availabilityStartTime": 1749538800000,
+                        "unplayableCause": null
+                    }
+                },
+                "episodeCount": {
+                    "$type": "atom",
+                    "value": null
+                },
+                "queue": {
+                    "$type": "atom",
+                    "value": {
+                        "available": true,
+                        "inQueue": false
+                    }
+                },
+                "summary": {
+                    "$type": "atom",
+                    "value": {
+                        "type": "movie",
+                        "unifiedEntityId": "Video:81743369",
+                        "id": 81743369,
+                        "isOriginal": true,
+                        "liveEvent": {
+                            "hasLiveEvent": false
+                        }
+                    }
+                }
+            }
+        }
+    }
+} 
