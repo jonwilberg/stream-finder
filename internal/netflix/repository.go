@@ -1,55 +1,87 @@
 package netflix
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
 	"regexp"
 )
 
-// Repository defines the interface for Netflix API operations
-type Repository interface {
-	GetGenreTitles(genreID string) ([]string, error)
+type NetflixRepository interface {
+	GetGenreTitles(genreID string) ([]NetflixTitle, error)
 }
 
-// repository implements the Repository interface
-type repository struct {
-	client *Client
+type NetflixTitle struct {
+	ID    string
+	Title string
+	Year  int
 }
 
-// NewRepository creates a new Netflix repository instance
-func NewRepository(client *Client) Repository {
-	return &repository{
+type netflixRepository struct {
+	client *NetflixClient
+}
+
+func NewNetflixRepository(client *NetflixClient) NetflixRepository {
+	return &netflixRepository{
 		client: client,
 	}
 }
 
-// GetGenreTitles retrieves all video IDs for a given genre
-func (r *repository) GetGenreTitles(genreID string) ([]string, error) {
-	resp, err := r.client.MakeGenreRequest(genreID)
+func (r *netflixRepository) GetGenreTitles(genreID string) ([]NetflixTitle, error) {
+	body, err := r.client.MakeGenreRequest(genreID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make genre request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	videoIDs := extractVideoIDs(body)
+
+	miniModalData, err := r.client.MakeMiniModalRequest(videoIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to make mini modal request: %w", err)
 	}
 
-	return extractVideoIDs(body), nil
+	titles, err := extractTitles(miniModalData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract titles: %w", err)
+	}
+
+	return titles, nil
 }
 
-// extractVideoIDs parses the API response and extracts video IDs
 func extractVideoIDs(response []byte) []string {
 	re := regexp.MustCompile(`Video:(\d+)`)
 	matches := re.FindAllStringSubmatch(string(response), -1)
 
 	videoIDs := make([]string, 0, len(matches))
 	for _, match := range matches {
-		if len(match) > 1 {
-			videoIDs = append(videoIDs, match[1])
-		}
+		videoIDs = append(videoIDs, match[1])
 	}
 
 	return videoIDs
+}
+
+func extractTitles(response []byte) ([]NetflixTitle, error) {
+	var result struct {
+		Data struct {
+			UnifiedEntities []struct {
+				Title      string `json:"title"`
+				VideoID    string `json:"unifiedEntityId"`
+				LatestYear int    `json:"latestYear"`
+			} `json:"unifiedEntities"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(response, &result); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	titles := make([]NetflixTitle, 0, len(result.Data.UnifiedEntities))
+	for _, entity := range result.Data.UnifiedEntities {
+		titles = append(titles, NetflixTitle{
+			ID:    entity.VideoID,
+			Title: entity.Title,
+			Year:  entity.LatestYear,
+		})
+	}
+
+	return titles, nil
 }
