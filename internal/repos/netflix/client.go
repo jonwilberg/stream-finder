@@ -25,7 +25,7 @@ func NewClient() *NetflixClient {
 	}
 }
 
-func (c *NetflixClient) MakeGenreRequest(genreID string) ([]byte, error) {
+func (c *NetflixClient) MakeGenreRequest(genreID string, offset int, batchSize int) ([]byte, error) {
 	url := "https://www.netflix.com/nq/website/memberapi/release/pathEvaluator?original_path=%2Fshakti%2Fmre%2FpathEvaluator"
 
 	formBody := &bytes.Buffer{}
@@ -36,8 +36,8 @@ func (c *NetflixClient) MakeGenreRequest(genreID string) ([]byte, error) {
 		return nil, fmt.Errorf("error creating form field: %v", err)
 	}
 
-	pathStr := fmt.Sprintf(`["genres",%s,"su",{"from":0,"to":10},"reference",["availability","episodeCount","queue","summary"]]`,
-		genreID)
+	pathStr := fmt.Sprintf(`["genres",%s,"su",{"from":%d,"to":%d},"reference",["availability","episodeCount","queue","summary"]]`,
+		genreID, offset, offset+batchSize)
 	if _, err := part.Write([]byte(pathStr)); err != nil {
 		return nil, fmt.Errorf("error writing form field: %v", err)
 	}

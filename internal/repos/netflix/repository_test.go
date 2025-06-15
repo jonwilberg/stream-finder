@@ -7,7 +7,7 @@ import (
 )
 
 func TestExtractVideoIDs(t *testing.T) {
-	sampleData, err := os.ReadFile(filepath.Join("..", "..", "testdata", "netflix_genre_sample.json"))
+	sampleData, err := os.ReadFile(filepath.Join("../../..", "testdata", "netflix_genre_sample.json"))
 	if err != nil {
 		t.Fatalf("Failed to read sample data: %v", err)
 	}
@@ -43,6 +43,11 @@ func TestExtractVideoIDs(t *testing.T) {
 			expected: []string{"Video:12345", "Video:67890", "Video:11111"},
 		},
 		{
+			name:     "Duplicate video IDs",
+			input:    []byte(`{"videos": ["Video:12345", "Video:67890", "Video:11111", "Video:12345", "Video:67890", "Video:11111"]}`),
+			expected: []string{"Video:12345", "Video:67890", "Video:11111"},
+		},
+		{
 			name:     "real API response",
 			input:    sampleData,
 			expected: []string{"Video:80121192", "Video:81743369"},
@@ -56,9 +61,15 @@ func TestExtractVideoIDs(t *testing.T) {
 				t.Errorf("extractVideoIDs() got %d IDs, want %d", len(got), len(tt.expected))
 				return
 			}
-			for i, id := range got {
-				if id != tt.expected[i] {
-					t.Errorf("extractVideoIDs()[%d] = %s, want %s", i, id, tt.expected[i])
+
+			expectedMap := make(map[string]struct{}, len(tt.expected))
+			for _, id := range tt.expected {
+				expectedMap[id] = struct{}{}
+			}
+
+			for _, id := range got {
+				if _, exists := expectedMap[id]; !exists {
+					t.Errorf("extractVideoIDs() got unexpected ID: %s", id)
 				}
 			}
 		})
