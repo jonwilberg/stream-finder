@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"regexp"
-	"time"
 
 	"github.com/jonwilberg/stream-finder/pkg/datatools"
-	"github.com/schollz/progressbar/v3"
+	"github.com/jonwilberg/stream-finder/pkg/logging"
 )
 
 type NetflixRepository interface {
@@ -60,7 +58,7 @@ func (r *netflixRepository) GetGenreTitles(genreID string) ([]NetflixTitle, erro
 	offset := 0
 	var allTitles []NetflixTitle
 
-	bar := newProgressBar(fmt.Sprintf("Fetching titles from Netflix genre %s", genreID))
+	bar := logging.NewProgressBar(fmt.Sprintf("Fetching titles from Netflix genre %s", genreID))
 
 	for {
 		titles, err := r.getGenreTitlesBatch(genreID, offset, batchSize)
@@ -143,20 +141,4 @@ func extractTitles(response []byte) ([]NetflixTitle, error) {
 	}
 
 	return titles, nil
-}
-
-func newProgressBar(description string) *progressbar.ProgressBar {
-	return progressbar.NewOptions(-1,
-		progressbar.OptionSetDescription(description),
-		progressbar.OptionShowCount(),
-		progressbar.OptionSetWidth(15),
-		progressbar.OptionThrottle(100*time.Millisecond),
-		progressbar.OptionShowIts(),
-		progressbar.OptionSpinnerType(14),
-		progressbar.OptionFullWidth(),
-		progressbar.OptionSetRenderBlankState(true),
-		progressbar.OptionOnCompletion(func() {
-			fmt.Fprint(os.Stdout, "\n")
-		}),
-	)
 }

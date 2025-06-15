@@ -1,0 +1,25 @@
+package logging
+
+import (
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/schollz/progressbar/v3"
+)
+
+func NewProgressBar(description string) *progressbar.ProgressBar {
+	return progressbar.NewOptions(-1,
+		progressbar.OptionSetDescription(description),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSetWidth(15),
+		progressbar.OptionThrottle(100*time.Millisecond),
+		progressbar.OptionShowIts(),
+		progressbar.OptionSpinnerType(14),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Fprint(os.Stdout, "\n")
+		}),
+	)
+}
