@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"regexp"
 	"time"
 
+	"github.com/jonwilberg/stream-finder/pkg/datatools"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -35,8 +37,8 @@ func (r *netflixRepository) GetTitles() ([]NetflixTitle, error) {
 	allTitles := []NetflixTitle{}
 
 	genres := []string{
-		"1365",  // Movies
-		"43040", // TV Shows,
+		"34399", // Movies
+		"83",    // Series,
 	}
 
 	for _, genreID := range genres {
@@ -47,7 +49,10 @@ func (r *netflixRepository) GetTitles() ([]NetflixTitle, error) {
 		allTitles = append(allTitles, titles...)
 	}
 
-	return allTitles, nil
+	allUniqueTitles := datatools.Unique(allTitles)
+	slog.Info("Fetched titles from Netflix", "count", len(allUniqueTitles))
+
+	return allUniqueTitles, nil
 }
 
 func (r *netflixRepository) GetGenreTitles(genreID string) ([]NetflixTitle, error) {
@@ -73,7 +78,7 @@ func (r *netflixRepository) GetGenreTitles(genreID string) ([]NetflixTitle, erro
 	}
 
 	bar.Finish()
-	slog.Info("Fetched titles from Netflix", "count", len(allTitles))
+
 	return allTitles, nil
 }
 
@@ -105,14 +110,9 @@ func extractVideoIDs(response []byte) []string {
 	re := regexp.MustCompile(`Video:(\d+)`)
 	matches := re.FindAllStringSubmatch(string(response), -1)
 
-	uniqueIDs := make(map[string]struct{}, len(matches))
+	videoIDs := make([]string, 0, len(matches))
 	for _, match := range matches {
-		uniqueIDs["Video:"+match[1]] = struct{}{}
-	}
-
-	videoIDs := make([]string, 0, len(uniqueIDs))
-	for id := range uniqueIDs {
-		videoIDs = append(videoIDs, id)
+		videoIDs = append(videoIDs, "Video:"+match[1])
 	}
 
 	return videoIDs
@@ -155,5 +155,8 @@ func newProgressBar(description string) *progressbar.ProgressBar {
 		progressbar.OptionSpinnerType(14),
 		progressbar.OptionFullWidth(),
 		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Fprint(os.Stdout, "\n")
+		}),
 	)
 }

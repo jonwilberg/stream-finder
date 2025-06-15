@@ -97,5 +97,6 @@ func writeNewTitles(ctx context.Context, client *firestore.Client, titles []netf
 		})
 	}
 
+	slog.Info("Writing new titles to firestore", "count", len(documents))
 	return firestore_repo.BulkWrite(ctx, client, "netflix_titles", documents)
 }
