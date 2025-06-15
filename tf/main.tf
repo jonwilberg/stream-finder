@@ -43,7 +43,7 @@ resource "google_project_service" "firestore_api" {
 
 resource "google_firestore_database" "firestore_database" {
   project     = var.project_id
-  name        = "primary-prod"
+  name        = "(default)"
   location_id = var.region
   type        = "FIRESTORE_NATIVE"
 
