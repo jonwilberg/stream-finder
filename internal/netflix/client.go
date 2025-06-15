@@ -78,21 +78,21 @@ func (c *NetflixClient) MakeGenreRequest(genreID string) ([]byte, error) {
 func (c *NetflixClient) MakeMiniModalRequest(unifiedEntityIds []string) ([]byte, error) {
 	url := "https://web.prod.cloud.netflix.com/graphql"
 
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"operationName": "MiniModalQuery",
-		"variables": map[string]interface{}{
+		"variables": map[string]any{
 			"videoMerchEnabled":       false,
 			"fetchPromoVideoOverride": false,
 			"hasPromoVideoOverride":   false,
 			"promoVideoId":            0,
 			"videoMerchContext":       "BROWSE",
 			"isLiveEpisodic":          false,
-			"artworkContext":          map[string]interface{}{},
+			"artworkContext":          map[string]any{},
 			"textEvidenceUiContext":   "BOB",
 			"unifiedEntityIds":        unifiedEntityIds,
 		},
-		"extensions": map[string]interface{}{
-			"persistedQuery": map[string]interface{}{
+		"extensions": map[string]any{
+			"persistedQuery": map[string]any{
 				"id":      "cea97958-c71c-4c3c-b94c-877fb3c9b89d",
 				"version": 102,
 			},

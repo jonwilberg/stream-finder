@@ -30,22 +30,22 @@ func TestExtractVideoIDs(t *testing.T) {
 		{
 			name:     "single video ID",
 			input:    []byte(`{"videos": ["Video:12345"]}`),
-			expected: []string{"12345"},
+			expected: []string{"Video:12345"},
 		},
 		{
 			name:     "multiple video IDs",
 			input:    []byte(`{"videos": ["Video:12345", "Video:67890", "Video:11111"]}`),
-			expected: []string{"12345", "67890", "11111"},
+			expected: []string{"Video:12345", "Video:67890", "Video:11111"},
 		},
 		{
 			name:     "video IDs in different formats",
 			input:    []byte(`{"videos": ["Video:12345", "some text", "Video:67890", "more text", "Video:11111"]}`),
-			expected: []string{"12345", "67890", "11111"},
+			expected: []string{"Video:12345", "Video:67890", "Video:11111"},
 		},
 		{
 			name:     "real API response",
 			input:    sampleData,
-			expected: []string{"80121192", "81743369"},
+			expected: []string{"Video:80121192", "Video:81743369"},
 		},
 	}
 

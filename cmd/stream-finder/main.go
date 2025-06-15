@@ -21,12 +21,4 @@ func main() {
 	for _, title := range titles {
 		fmt.Printf("%s (%d)\n", title.Title, title.Year)
 	}
-
-	entityIds := []string{"Video:81588273", "Video:81696513", "Video:81712178"}
-	response, err := client.MakeMiniModalRequest(entityIds)
-	if err != nil {
-		log.Fatalf("Error getting mini modal data: %v", err)
-	}
-
-	fmt.Printf("\nMini Modal Response:\n%s\n", string(response))
 }

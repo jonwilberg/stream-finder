@@ -33,6 +33,9 @@ func (r *netflixRepository) GetGenreTitles(genreID string) ([]NetflixTitle, erro
 	}
 
 	videoIDs := extractVideoIDs(body)
+	if len(videoIDs) == 0 {
+		return []NetflixTitle{}, nil
+	}
 
 	miniModalData, err := r.client.MakeMiniModalRequest(videoIDs)
 	if err != nil {
@@ -53,7 +56,7 @@ func extractVideoIDs(response []byte) []string {
 
 	videoIDs := make([]string, 0, len(matches))
 	for _, match := range matches {
-		videoIDs = append(videoIDs, match[1])
+		videoIDs = append(videoIDs, "Video:"+match[1])
 	}
 
 	return videoIDs
