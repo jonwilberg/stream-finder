@@ -2,11 +2,14 @@ package imdb
 
 import (
 	"bufio"
+	"compress/gzip"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jonwilberg/stream-finder/pkg/logging"
@@ -46,16 +49,67 @@ func NewIMDBRepository() IMDBRepository {
 }
 
 func (r *imdbRepository) GetTitles() ([]IMDBTitle, error) {
-	file, err := os.Open("...")
+	url := "https://datasets.imdbws.com/title.basics.tsv.gz"
+	filepath := filepath.Join(os.TempDir(), "title.basics.tsv")
 
+	resp, err := r.downloadFile(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open file: %w", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	file, err := r.unzipFile(resp, filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	defer os.Remove(filepath)
+
+	return r.extractTitles(file)
+}
+
+func (r *imdbRepository) downloadFile(url string) (*http.Response, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download file: %w", err)
 	}
 
-	defer file.Close()
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("failed to download file: status code %d", resp.StatusCode)
+	}
 
-	reader := bufio.NewReader(file)
-	csvr := csv.NewReader(reader)
+	return resp, nil
+}
+
+func (r *imdbRepository) unzipFile(resp *http.Response, filepath string) (*os.File, error) {
+	gzipReader, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+	}
+	defer gzipReader.Close()
+
+	file, err := os.Create(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create file: %w", err)
+	}
+
+	if _, err := io.Copy(file, gzipReader); err != nil {
+		file.Close()
+		return nil, fmt.Errorf("failed to write file: %w", err)
+	}
+
+	if _, err := file.Seek(0, 0); err != nil {
+		file.Close()
+		return nil, fmt.Errorf("failed to seek to start of file: %w", err)
+	}
+
+	return file, nil
+}
+
+func (r *imdbRepository) extractTitles(file *os.File) ([]IMDBTitle, error) {
+	bufReader := bufio.NewReader(file)
+	csvr := csv.NewReader(bufReader)
 	csvr.Comma = '\t'
 	csvr.FieldsPerRecord = 9
 	csvr.ReuseRecord = true
