@@ -8,34 +8,81 @@ import (
 
 	"cloud.google.com/go/firestore"
 	firestore_repo "github.com/jonwilberg/stream-finder/internal/repos/firestore"
+	"github.com/jonwilberg/stream-finder/internal/repos/imdb"
 	"github.com/jonwilberg/stream-finder/internal/repos/netflix"
 )
 
 type Title struct {
-	Title     string    `firestore:"title"`
-	Year      int       `firestore:"year"`
-	UpdatedAt time.Time `firestore:"updated_at"`
+	Title         string    `firestore:"title"`
+	Year          int       `firestore:"year"`
+	UpdatedAt     time.Time `firestore:"updated_at"`
+	OriginalTitle string    `firestore:"original_title"`
+	IsAdult       bool      `firestore:"is_adult"`
+	Genres        []string  `firestore:"genres"`
+	TitleType     string    `firestore:"title_type"`
 }
 
 func UpdateTitles(ctx context.Context) error {
-	newTitles, err := fetchNewTitles()
-	if err != nil {
-		return fmt.Errorf("failed to fetch new titles: %w", err)
-	}
-
 	firestoreClient, err := firestore_repo.NewFirestoreClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create firestore client: %w", err)
 	}
 
-	if err := deleteRemovedTitles(ctx, firestoreClient, newTitles); err != nil {
+	if err := upsertImdbTitles(ctx, firestoreClient); err != nil {
+		return fmt.Errorf("failed to upsert imdb titles: %w", err)
+	}
+
+	if err := updateNetflixTitles(ctx, firestoreClient); err != nil {
+		return fmt.Errorf("failed to update netflix titles: %w", err)
+	}
+
+	return nil
+}
+
+func upsertImdbTitles(ctx context.Context, firestoreClient *firestore.Client) error {
+	imdbRepo := imdb.NewIMDBRepository()
+
+	imdbTitles, err := imdbRepo.GetTitles()
+
+	if err != nil {
+		return fmt.Errorf("failed to fetch imdb titles: %w", err)
+	}
+
+	documents := make([]firestore_repo.Document, 0, len(imdbTitles))
+	for _, title := range imdbTitles {
+		documents = append(documents, firestore_repo.Document{
+			ID: title.ID,
+			Data: Title{
+				Title:         title.Title,
+				Year:          title.Year,
+				UpdatedAt:     time.Now(),
+				OriginalTitle: title.OriginalTitle,
+				IsAdult:       title.IsAdult,
+				Genres:        title.Genres,
+				TitleType:     title.TitleType,
+			},
+		})
+	}
+
+	slog.Info("Writing new titles to firestore", "count", len(documents))
+	return firestore_repo.BulkWrite(ctx, firestoreClient, "imdb_titles", documents)
+}
+
+func updateNetflixTitles(ctx context.Context, firestoreClient *firestore.Client) error {
+
+	newNetflixTitles, err := fetchNewNetflixTitles()
+	if err != nil {
+		return fmt.Errorf("failed to fetch new netflix titles: %w", err)
+	}
+
+	if err := deleteRemovedTitles(ctx, firestoreClient, newNetflixTitles); err != nil {
 		return fmt.Errorf("failed to delete removed titles: %w", err)
 	}
 
-	return writeNewTitles(ctx, firestoreClient, newTitles)
+	return writeNewTitles(ctx, firestoreClient, newNetflixTitles)
 }
 
-func fetchNewTitles() ([]netflix.NetflixTitle, error) {
+func fetchNewNetflixTitles() ([]netflix.NetflixTitle, error) {
 	netflixRepo := netflix.NewNetflixRepository()
 	titles, err := netflixRepo.GetTitles()
 	if err != nil {

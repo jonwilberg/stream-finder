@@ -17,21 +17,14 @@ func BulkWrite(ctx context.Context, client *firestore.Client, collectionName str
 	collection := client.Collection(collectionName)
 	bulkWriter := client.BulkWriter(ctx)
 
-	jobs := make([]*firestore.BulkWriterJob, 0, len(documents))
 	for _, doc := range documents {
-		job, err := bulkWriter.Set(collection.Doc(doc.ID), doc.Data)
+		_, err := bulkWriter.Set(collection.Doc(doc.ID), doc.Data)
 		if err != nil {
 			return fmt.Errorf("failed to create bulk writer job: %w", err)
 		}
-		jobs = append(jobs, job)
 	}
 
 	bulkWriter.End()
-	for _, job := range jobs {
-		if _, err := job.Results(); err != nil {
-			return fmt.Errorf("firestore write job failed: %w", err)
-		}
-	}
 	return nil
 }
 

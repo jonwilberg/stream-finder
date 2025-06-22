@@ -1,52 +1,51 @@
 terraform {
+  required_version = ">= 1.0.0"
   required_providers {
-    google = { source = "hashicorp/google", version = ">= 4.56.0" }
-  }
-}
-
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
-resource "google_storage_bucket" "terraform_state" {
-  name     = "tf-remote-backend-463006"
-  location = var.region
-
-  force_destroy               = false
-  public_access_prevention    = "enforced"
-  uniform_bucket_level_access = true
-
-  versioning {
-    enabled = true
-  }
-}
-
-resource "local_file" "backend_config" {
-  file_permission = "0644"
-  filename        = "${path.module}/backend.tf"
-
-  content = <<-EOT
-  terraform {
-    backend "gcs" {
-      bucket = "${google_storage_bucket.terraform_state.name}"
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "~> 2.0"
     }
   }
-  EOT
 }
 
-resource "google_project_service" "firestore_api" {
-  project                    = var.project_id
-  service                    = "firestore.googleapis.com"
-  disable_dependent_services = true
+provider "digitalocean" {
+  token = var.do_token
 }
 
-resource "google_firestore_database" "firestore_database" {
-  project     = var.project_id
-  name        = "(default)"
-  location_id = var.region
-  type        = "FIRESTORE_NATIVE"
-
-  depends_on = [ google_project_service.firestore_api ]
+data "digitalocean_ssh_key" "default" {
+  name = var.ssh_key_name
 }
 
+resource "digitalocean_droplet" "elasticsearch_node" {
+  name       = "elasticsearch-node"
+  region     = "ams3"
+  size       = "s-1vcpu-2gb"
+  image      = "ubuntu-22-04-x64"
+  ssh_keys   = [data.digitalocean_ssh_key.default.id]
+  backups    = false
+  monitoring = true
+
+  connection {
+    host        = self.ipv4_address
+    type        = "ssh"
+    user        = "root"
+    private_key = file(var.ssh_key_path)
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/scripts/install_elasticsearch.sh"
+    destination = "/tmp/install_elasticsearch.sh"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/config/elasticsearch.yml"
+    destination = "/etc/elasticsearch/elasticsearch.yml"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/install_elasticsearch.sh",
+      "ELASTICSEARCH_PASSWORD='${var.elasticsearch_password}' /tmp/install_elasticsearch.sh",
+    ]
+  }
+}
