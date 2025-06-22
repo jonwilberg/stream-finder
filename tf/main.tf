@@ -5,6 +5,14 @@ terraform {
       source  = "digitalocean/digitalocean"
       version = "~> 2.0"
     }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -12,8 +20,48 @@ provider "digitalocean" {
   token = var.do_token
 }
 
+provider "google" {
+  project = "stream-finder"
+  region  = "europe-north1"
+}
+
 data "digitalocean_ssh_key" "default" {
   name = var.ssh_key_name
+}
+
+data "digitalocean_project" "stream_finder" {
+  name = "stream-finder"
+}
+
+resource "random_id" "default" {
+  byte_length = 8
+}
+
+resource "google_storage_bucket" "default" {
+  name     = "${random_id.default.hex}-terraform-remote-backend"
+  project  = var.gcp_project_id
+  location = "europe-north1"
+
+  force_destroy               = false
+  public_access_prevention    = "enforced"
+  uniform_bucket_level_access = true
+
+  versioning {
+    enabled = true
+  }
+}
+
+resource "local_file" "default" {
+  file_permission = "0644"
+  filename        = "${path.module}/backend.tf"
+
+  content = <<-EOT
+terraform {
+  backend "gcs" {
+    bucket = "${google_storage_bucket.default.name}"
+  }
+}
+EOT
 }
 
 resource "digitalocean_droplet" "elasticsearch_node" {
@@ -48,4 +96,11 @@ resource "digitalocean_droplet" "elasticsearch_node" {
       "ELASTICSEARCH_PASSWORD='${var.elasticsearch_password}' /tmp/install_elasticsearch.sh",
     ]
   }
+}
+
+resource "digitalocean_project_resources" "elasticsearch_node" {
+  project = data.digitalocean_project.stream_finder.id
+  resources = [
+    digitalocean_droplet.elasticsearch_node.urn
+  ]
 }

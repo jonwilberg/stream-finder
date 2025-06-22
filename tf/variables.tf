@@ -16,3 +16,8 @@ variable "elasticsearch_password" {
   type        = string
   sensitive   = true
 }
+
+variable "gcp_project_id" {
+  description = "GCP project ID"
+  type        = string
+}
