@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,10 +12,15 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/esutil"
+	"github.com/jonwilberg/stream-finder/pkg/logging"
 )
 
 type TitleDocument struct {
-	ID            string   `json:"_id"`
+	ID   string
+	Body TitleDocumentBody
+}
+
+type TitleDocumentBody struct {
 	TitleType     string   `json:"title_type"`
 	Title         string   `json:"title"`
 	OriginalTitle string   `json:"original_title"`
@@ -33,26 +39,42 @@ func NewRepository(client *Client) *Repository {
 	}
 }
 
-func (r *Repository) BulkIndexTitles(ctx context.Context, documents []TitleDocument) error {
-	bi, err := esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
+func (r *Repository) BulkIndexTitles(ctx context.Context, titleDocs []TitleDocument) error {
+	bulkIndexerConfig := esutil.BulkIndexerConfig{
 		Index:         "titles",
 		Client:        r.client,
 		NumWorkers:    10,
-		FlushBytes:    10000000,
+		FlushBytes:    5_000_000,
 		FlushInterval: 30 * time.Second,
-	})
+	}
 
+	bi, err := esutil.NewBulkIndexer(bulkIndexerConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create bulk indexer: %w", err)
 	}
 
-	for _, doc := range documents {
+	bar := logging.NewProgressBar("Indexing titles to Elasticsearch", len(titleDocs))
+
+	for _, doc := range titleDocs {
+		docJSON, err := json.Marshal(doc.Body)
+		if err != nil {
+			return fmt.Errorf("failed to marshal document: %w", err)
+		}
 		bi.Add(ctx, esutil.BulkIndexerItem{
 			Action:     "index",
 			DocumentID: doc.ID,
+			Body:       bytes.NewReader(docJSON),
 		})
+		bar.Add(1)
 	}
 
+	bar.Finish()
+
+	if err := bi.Close(ctx); err != nil {
+		return fmt.Errorf("failed to close bulk indexer: %w", err)
+	}
+
+	return nil
 }
 
 func (r *Repository) EnsureIndexExists(ctx context.Context, indexName string, mappingJSON string) error {

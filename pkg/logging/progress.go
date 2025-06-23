@@ -8,8 +8,8 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-func NewProgressBar(description string) *progressbar.ProgressBar {
-	return progressbar.NewOptions(-1,
+func NewProgressBar(description string, barLength int) *progressbar.ProgressBar {
+	return progressbar.NewOptions(barLength,
 		progressbar.OptionSetDescription(description),
 		progressbar.OptionShowCount(),
 		progressbar.OptionSetWidth(15),

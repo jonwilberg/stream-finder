@@ -34,23 +34,14 @@ func UpdateTitles(ctx context.Context) error {
 		return fmt.Errorf("failed to update elasticsearch indices: %w", err)
 	}
 
-	firestoreClient, err := firestore_repo.NewFirestoreClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create firestore client: %w", err)
-	}
-
-	if err := upsertImdbTitles(ctx, firestoreClient); err != nil {
+	if err := upsertImdbTitles(ctx, elasticsearchRepo); err != nil {
 		return fmt.Errorf("failed to upsert imdb titles: %w", err)
-	}
-
-	if err := updateNetflixTitles(ctx, firestoreClient); err != nil {
-		return fmt.Errorf("failed to update netflix titles: %w", err)
 	}
 
 	return nil
 }
 
-func upsertImdbTitles(ctx context.Context, firestoreClient *firestore.Client) error {
+func upsertImdbTitles(ctx context.Context, elasticsearchRepo *elasticsearch.Repository) error {
 	imdbRepo := imdb.NewIMDBRepository()
 
 	imdbTitles, err := imdbRepo.GetTitles()
@@ -59,14 +50,13 @@ func upsertImdbTitles(ctx context.Context, firestoreClient *firestore.Client) er
 		return fmt.Errorf("failed to fetch imdb titles: %w", err)
 	}
 
-	documents := make([]firestore_repo.Document, 0, len(imdbTitles))
+	documents := make([]elasticsearch.TitleDocument, 0, len(imdbTitles))
 	for _, title := range imdbTitles {
-		documents = append(documents, firestore_repo.Document{
+		documents = append(documents, elasticsearch.TitleDocument{
 			ID: title.ID,
-			Data: Title{
+			Body: elasticsearch.TitleDocumentBody{
 				Title:         title.Title,
 				Year:          title.Year,
-				UpdatedAt:     time.Now(),
 				OriginalTitle: title.OriginalTitle,
 				IsAdult:       title.IsAdult,
 				Genres:        title.Genres,
@@ -75,25 +65,11 @@ func upsertImdbTitles(ctx context.Context, firestoreClient *firestore.Client) er
 		})
 	}
 
-	slog.Info("Writing new titles to firestore", "count", len(documents))
-	return firestore_repo.BulkWrite(ctx, firestoreClient, "imdb_titles", documents)
+	slog.Info("Writing new titles to elasticsearch", "count", len(documents))
+	return elasticsearchRepo.BulkIndexTitles(ctx, documents)
 }
 
-func updateNetflixTitles(ctx context.Context, firestoreClient *firestore.Client) error {
-
-	newNetflixTitles, err := fetchNewNetflixTitles()
-	if err != nil {
-		return fmt.Errorf("failed to fetch new netflix titles: %w", err)
-	}
-
-	if err := deleteRemovedTitles(ctx, firestoreClient, newNetflixTitles); err != nil {
-		return fmt.Errorf("failed to delete removed titles: %w", err)
-	}
-
-	return writeNewTitles(ctx, firestoreClient, newNetflixTitles)
-}
-
-func fetchNewNetflixTitles() ([]netflix.NetflixTitle, error) {
+func FetchNewNetflixTitles() ([]netflix.NetflixTitle, error) {
 	netflixRepo := netflix.NewNetflixRepository()
 	titles, err := netflixRepo.GetTitles()
 	if err != nil {
@@ -102,7 +78,7 @@ func fetchNewNetflixTitles() ([]netflix.NetflixTitle, error) {
 	return titles, nil
 }
 
-func deleteRemovedTitles(ctx context.Context, client *firestore.Client, newTitles []netflix.NetflixTitle) error {
+func DeleteRemovedTitles(ctx context.Context, client *firestore.Client, newTitles []netflix.NetflixTitle) error {
 	oldTitles, err := firestore_repo.ReadAll(ctx, client, "netflix_titles")
 	if err != nil {
 		return fmt.Errorf("failed to read existing titles: %w", err)
@@ -142,7 +118,7 @@ func deleteRemovedTitles(ctx context.Context, client *firestore.Client, newTitle
 	return nil
 }
 
-func writeNewTitles(ctx context.Context, client *firestore.Client, titles []netflix.NetflixTitle) error {
+func WriteNewTitles(ctx context.Context, client *firestore.Client, titles []netflix.NetflixTitle) error {
 	documents := make([]firestore_repo.Document, 0, len(titles))
 	for _, title := range titles {
 		documents = append(documents, firestore_repo.Document{

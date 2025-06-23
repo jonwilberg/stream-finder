@@ -58,7 +58,7 @@ func (r *netflixRepository) GetGenreTitles(genreID string) ([]NetflixTitle, erro
 	offset := 0
 	var allTitles []NetflixTitle
 
-	bar := logging.NewProgressBar(fmt.Sprintf("Fetching titles from Netflix genre %s", genreID))
+	bar := logging.NewProgressBar(fmt.Sprintf("Fetching titles from Netflix genre %s", genreID), -1)
 
 	for {
 		titles, err := r.getGenreTitlesBatch(genreID, offset, batchSize)

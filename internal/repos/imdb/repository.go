@@ -121,7 +121,7 @@ func (r *imdbRepository) extractTitles(file *os.File) ([]IMDBTitle, error) {
 
 	titles := make([]IMDBTitle, 0, 12_000_000)
 	failed := 0
-	bar := logging.NewProgressBar("Decoding IMDb titles")
+	bar := logging.NewProgressBar("Decoding IMDb titles", -1)
 	for {
 		var t IMDBTitle
 		if err := dec.Decode(&t); err == io.EOF {
