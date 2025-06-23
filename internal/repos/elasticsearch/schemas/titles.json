@@ -1,0 +1,41 @@
+{
+    "mappings": {
+        "dynamic": "false",
+        "properties": {
+            "title_type": {
+                "type": "keyword"
+            },
+            "title": {
+                "type": "text",
+                "analyzer": "english"
+            },
+            "original_title": {
+                "type": "text",
+                "index": false
+            },
+            "is_adult": {
+                "type": "boolean"
+            },
+            "year": {
+                "type": "integer"
+            },
+            "genres": {
+                "type": "keyword",
+                "index": false
+            }
+        }
+    },
+    "settings": {
+        "index": {
+            "routing": {
+                "allocation": {
+                    "include": {
+                        "_tier_preference": "data_content"
+                    }
+                }
+            },
+            "number_of_shards": "1",
+            "number_of_replicas": "0"
+        }
+    }
+}

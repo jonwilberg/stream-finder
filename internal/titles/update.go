@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/jonwilberg/stream-finder/internal/repos/elasticsearch"
 	firestore_repo "github.com/jonwilberg/stream-finder/internal/repos/firestore"
 	"github.com/jonwilberg/stream-finder/internal/repos/imdb"
 	"github.com/jonwilberg/stream-finder/internal/repos/netflix"
@@ -23,6 +24,16 @@ type Title struct {
 }
 
 func UpdateTitles(ctx context.Context) error {
+	elasticsearchClient, err := elasticsearch.NewClient()
+	if err != nil {
+		return fmt.Errorf("failed to create elasticsearch client: %w", err)
+	}
+
+	elasticsearchRepo := elasticsearch.NewRepository(elasticsearchClient)
+	if err := elasticsearchRepo.UpdateIndices(ctx); err != nil {
+		return fmt.Errorf("failed to update elasticsearch indices: %w", err)
+	}
+
 	firestoreClient, err := firestore_repo.NewFirestoreClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create firestore client: %w", err)
