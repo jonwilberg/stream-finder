@@ -7,7 +7,7 @@ import (
 )
 
 func TestExtractVideoIDs(t *testing.T) {
-	sampleData, err := os.ReadFile(filepath.Join("../../..", "testdata", "netflix_genre_sample.json"))
+	sampleData, err := os.ReadFile(filepath.Join("../../../testdata", "netflix_genre_sample.json"))
 	if err != nil {
 		t.Fatalf("Failed to read sample data: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestExtractVideoIDs(t *testing.T) {
 }
 
 func TestExtractTitles(t *testing.T) {
-	sampleData, err := os.ReadFile(filepath.Join("..", "..", "testdata", "netflix_mini_modal_sample.json"))
+	sampleData, err := os.ReadFile(filepath.Join("../../../testdata", "netflix_mini_modal_sample.json"))
 	if err != nil {
 		t.Fatalf("Failed to read sample data: %v", err)
 	}
