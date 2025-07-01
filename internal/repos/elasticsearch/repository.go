@@ -33,6 +33,19 @@ type Repository struct {
 	client *Client
 }
 
+type SearchResponse struct {
+	Hits struct {
+		Total struct {
+			Value int `json:"value"`
+		} `json:"total"`
+		Hits []struct {
+			ID     string            `json:"_id"`
+			Score  float64           `json:"_score"`
+			Source TitleDocumentBody `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
 func NewRepository(client *Client) *Repository {
 	return &Repository{
 		client: client,
@@ -132,4 +145,33 @@ func (r *Repository) UpdateIndices(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *Repository) Search(ctx context.Context, indexName string, query map[string]any) ([]byte, error) {
+	queryJSON, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query: %w", err)
+	}
+
+	resp, err := r.client.Search(
+		r.client.Search.WithContext(ctx),
+		r.client.Search.WithIndex(indexName),
+		r.client.Search.WithBody(bytes.NewReader(queryJSON)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute search: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.IsError() {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("search failed: %s", string(bodyBytes))
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return bodyBytes, nil
 }
