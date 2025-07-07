@@ -31,15 +31,15 @@ export function SearchBar() {
           type="text"
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          placeholder="Ask me anything"
-          className="w-full pl-12 pr-16 py-3 sm:py-4 text-base sm:text-lg bg-white border border-gray-200 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 hover:shadow-xl transition-shadow duration-200"
+          placeholder="Search for a movie or TV show"
+          className="w-full pl-12 pr-20 py-3 sm:py-4 text-base sm:text-lg bg-white border border-gray-200 rounded-2xl shadow-lg focus:outline-none focus:border-blue-200 focus:ring-0 placeholder-gray-400"
         />
         <button
           type="submit"
-          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+          className="absolute right-2 top-1/2 transform -translate-y-1/2 aspect-square h-10 sm:h-12 bg-gray-100 hover:bg-gray-200 rounded-2xl flex items-center justify-center transition-colors duration-200 cursor-pointer"
         >
           <svg
-            className="h-5 w-5 text-gray-400 hover:text-gray-600"
+            className="h-5 w-5 text-gray-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -49,7 +49,7 @@ export function SearchBar() {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="2"
-              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+              d="M9 5l7 7-7 7"
             />
           </svg>
         </button>
