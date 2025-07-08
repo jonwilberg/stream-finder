@@ -32,7 +32,7 @@ export function SearchBar() {
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           placeholder="Search for a movie or TV show"
-          className="w-full pl-12 pr-20 py-3 sm:py-4 text-base sm:text-lg bg-white border border-gray-200 rounded-2xl shadow-lg focus:outline-none focus:border-blue-200 focus:ring-0 placeholder-gray-400"
+          className="w-full pl-12 pr-20 py-3 sm:py-4 text-base sm:text-lg text-gray-900 bg-white border border-gray-200 rounded-2xl shadow-lg focus:outline-none focus:border-blue-200 focus:ring-0 placeholder-gray-400"
         />
         <button
           type="submit"
